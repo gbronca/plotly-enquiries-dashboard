@@ -18,13 +18,14 @@ df = df[df['Date'] > datetime(2015,12,31)]
 df['Total Enquiries'] = df['OL Enq less TBD'] + df ['Store Enq less TBD']
 df['Store Reservations'] = df['StoreConversion'].fillna(df['Stores Res'])
 df['Online Enq Res Online'] = df['OnlineResPurConversion'].fillna(df['OnlineRes'])
-df['Online Enq Res in Store'] = (df['OnlineDropOutConversion']+df['WCFConversion']).fillna((df['RES WCF']+df['Online Dropouts']))
+df['Online Enq Res in Store'] = (
+    df['OnlineDropOutConversion']+df['WCFConversion']).fillna(
+        (df['RES WCF']+df['Online Dropouts']))
 df['Online Reservations'] = df['Online Enq Res Online'] + df['Online Enq Res in Store']
 df['Total Reservations'] = df['Online Reservations'] + df['Store Reservations']
 
 
 df_total = df.groupby(['Date']).sum().reindex()
-
 
 
 options = [{'label': 'Online Enquiries', 'value': 'OL Enq less TBD'},
@@ -38,7 +39,6 @@ options = [{'label': 'Online Enquiries', 'value': 'OL Enq less TBD'},
            {'label': 'Walk-in Reservations', 'value': 'StResWalkin'},
            {'label': 'Phone-in Reservations', 'value': 'StResInCall'}
           ]
-
 
 
 app = dash.Dash()
@@ -71,14 +71,20 @@ def update_graph(yaxis_value):
 
     figure={
         'data': [
-            {'x': df_total.index, 
-            'y': df_total[yaxis_value]}
+            go.Scatter(
+                x=df_total.index,
+                y=df_total[yaxis_value],
+                mode='lines+markers',
+            )
         ],
-        'layout':{'title': chart_title[0]['label'],
-                'xaxis':{'title':'Date'},
-                'yaxis':{'title': 'Enquiries'},
-                'margin':{'l': '20px', 'b': '20px', 't': '15px', 'r': '20px'}
-        }        
+        'layout':
+            go.Layout(
+                title=chart_title[0]['label'],
+                xaxis={'title': 'Date'},
+                yaxis={'title': 'Enquiries'},
+                xaxis_tickformat='%B %Y',
+                hovermode='closest',
+            )        
     }
     return figure
 
