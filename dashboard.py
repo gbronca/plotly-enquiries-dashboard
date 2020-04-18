@@ -11,8 +11,16 @@ df = pd.read_excel('Data/Enquiry Report.xlsm',
                     sheet_name='Enquiry Report DataSheet',
                     index_col=None, na_values=['NA'])
 
+
 # Exclude anything before January 1st 2016
 df = df[df['Date'] > datetime(2015,12,31)]
+
+# Converts column Date into Datetime Series
+df['Date'] = pd.DatetimeIndex(df['Date'])
+
+# Creates a list of unique years and months
+year_list = pd.DatetimeIndex(df['Date']).year.unique().to_list()
+month_list = pd.DatetimeIndex(df['Date']).month.unique().to_list()
 
 # Create new columns in dataframe for metrics with multiple criterias
 df['Total Enquiries'] = df['OL Enq less TBD'] + df ['Store Enq less TBD']
@@ -26,6 +34,9 @@ df['Total Reservations'] = df['Online Reservations'] + df['Store Reservations']
 
 
 df_total = df.groupby(['Date']).sum().reindex()
+df_total['year'] = pd.DatetimeIndex(df_total.index).year
+df_total['month'] = pd.DatetimeIndex(df_total.index).month
+df_total['month'] = pd.to_datetime(df_total['month'], format='%m').dt.month_name()
 
 
 options = [{'label': 'Online Enquiries', 'value': 'OL Enq less TBD'},
@@ -39,7 +50,6 @@ options = [{'label': 'Online Enquiries', 'value': 'OL Enq less TBD'},
            {'label': 'Walk-in Reservations', 'value': 'StResWalkin'},
            {'label': 'Phone-in Reservations', 'value': 'StResInCall'}
           ]
-
 
 app = dash.Dash()
 
@@ -58,6 +68,10 @@ app.layout = html.Section([
         
         html.Div([
             dcc.Graph(id='company-total')
+            
+        ]),
+        html.Div([
+            dcc.Graph(id='company-totals_yoy')
             
         ])
 
@@ -86,6 +100,34 @@ def update_graph(yaxis_value):
                 hovermode='closest',
             )        
     }
+    return figure
+
+
+@app.callback(Output('company-totals_yoy', 'figure'),
+             [Input('enquiry-type', 'value')])
+def update_chart_yoy(yaxis_value):
+
+    chart_title = [label for label in options if label['value'] == yaxis_value]
+
+    data = []
+    for year in year_list[::-1]:
+        trace = go.Scatter(
+                    x=df_total['month'],
+                    y=df_total[df_total['year']==year][yaxis_value],
+                    mode='lines+markers',
+                    name=year,
+                    
+                )
+        data.append(trace)
+
+    layout = go.Layout(
+                title=chart_title[0]['label'],
+                xaxis={'title': 'Month'},
+                yaxis={'title': 'Enquiries'},
+                hovermode='closest', 
+            )
+
+    figure = go.Figure(data=data, layout=layout)
     return figure
 
 
