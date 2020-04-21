@@ -1,4 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
+
+/* Base Styles
+–––––––––––––––––––––––––––––––––––––––––––––––––– */
+
+html {
+    font-size: .8rem;
+    line-height: 1.6;
+    box-sizing: border-box;
+}
+
 body {
+    margin: 0 auto;
     background-color: #f2f2f2;
-    margin: 5%;
-  }
+    margin: 2%;
+    font-family: 'Noto Sans', sans-serif;
+    box-sizing: border-box;
+    color: #444444;
+}
+
+h1, h2, h3, h4, h5 {
+    font-weight: 400;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.grid-container {
+    margin: 0 auto;
+    max-width: 1600px;
+    display: grid;
+    justify-content: center;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+        "yoy-panel"
+        "yoy-chart"
+        "trend-chart";
+    gap: 20px;
+}
+
+.chart-container {
+    /* position: relative; */
+    grid-area: charts;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+}
+
+/* Headers and Labels 
+_______________________________________________________ */
+
+.label {
+    font-size: 1.5rem;
+    padding: 10px;
+    padding-bottom: 0;
+}
+
+/* Controlers & Panels
+_______________________________________________________ */
+
+.styled-panel {
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    padding: 15px;
+    position: relative;
+    box-shadow: 2px 2px 2px lightgrey;
+    font-size: 1.2rem;
+}
+
+.control-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+#yoy-panel {
+    grid-area: yoy-panel;
+}
+
+#yoy-chart {
+    grid-area: yoy-chart;
+}
+
+#trend-chart {
+    grid-area: trend-chart;
+}
+
+#enquiry-type,
+#slider-years {
+    flex-grow: 5;
+}
+
+.yoy-slider {
+    margin: 0 !important;
+    padding: 5px !important;
+}
+
+
+/* Media Queries
+_______________________________________________________ */
+
+/* @media screen and (min-device-width: 640px) {
+
+} */
+
+/* Medium (md) */
+@media screen and (min-device-width: 768px) {
+    .grid-container {
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-areas:
+            "yoy-panel yoy-chart yoy-chart yoy-chart"
+            "trend-chart trend-chart trend-chart trend-chart";
+    }
+
+    .label {
+        font-size: 1.2rem;
+    }
+
+    .control-panel {
+        flex-direction: column;
+    }
+
+    #enquiry-type {
+        width: 100%;
+    }
+
+    #slider-years {
+        width: 95%;
+    }
+}
+
+/* Large (lg) */
+@media screen and (min-device-width: 1024px) {
+    .control-panel {
+        min-width: 250px;
+        max-width: 350px;
+    }
+}
+
+/* Extra Large (xl) */
+@media screen and (min-device-width: 1280px) {
+    .container {
+        grid-template-columns: repeat(5, 1fr);
+        grid-template-areas:
+            "yoy-panel yoy-chart yoy-chart yoy-chart yoy-chart"
+            "trend-chart trend-chart trend-chart trend-chart trend-chart";
+    }
+
+}

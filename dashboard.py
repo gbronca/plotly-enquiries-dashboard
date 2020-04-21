@@ -5,7 +5,31 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime
+import copy
 
+# ! TailwindCSS load
+# external_stylesheets = ['https://unpkg.com/tailwindcss@^1.2/dist/tailwind.min.csss',
+#                 {
+#                     'href':'https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css',
+#                     'rel': 'stylesheet',
+#                     'crossorigin': 'anonymous'
+#                 }
+# ]
+
+# Configures the ModeBar on the charts
+config_charts = dict({
+    'displayModeBar': 'hover',
+    'displaylogo': False,
+})
+
+# TODO create generic layout for all charts
+# layout = dict(
+#     hovermode='closest',
+#     plot_bgcolor='#F9F9F9',
+#     paper_bgcolor='#F9F9F9',
+#     autosize=True,
+#     margin=dict(l=60, r=30, b=40, t=30),
+# )
 
 df = pd.read_excel('Data/Enquiry Report.xlsm',
                     sheet_name='Enquiry Report DataSheet',
@@ -36,7 +60,7 @@ df['Total Reservations'] = df['Online Reservations'] + df['Store Reservations']
 df_total = df.groupby(['Date']).sum().reindex()
 df_total['year'] = pd.DatetimeIndex(df_total.index).year
 df_total['month'] = pd.DatetimeIndex(df_total.index).month
-df_total['month'] = pd.to_datetime(df_total['month'], format='%m').dt.month_name()
+df_total['month_name'] = pd.to_datetime(df_total['month'], format='%m').dt.month_name()
 
 
 options = [{'label': 'Online Enquiries', 'value': 'OL Enq less TBD'},
@@ -51,37 +75,158 @@ options = [{'label': 'Online Enquiries', 'value': 'OL Enq less TBD'},
            {'label': 'Phone-in Reservations', 'value': 'StResInCall'}
           ]
 
-app = dash.Dash()
+min_year = df_total['year'].min()
+max_year = df_total['year'].max()
 
-app.layout = html.Section([
-        html.H1('Enquiries & Reservations',
-                style={'text-align': 'center'}
+app = dash.Dash(__name__)
+
+app.layout = html.Section(
+    [
+        html.Div(
+            [
+                html.H1(
+                    'Enquiries & Reservations',
+                    style={
+                        'margin-bottom': '0px',
+                    },
+                ),
+                html.H3(
+                    'Marketing Overview',
+                    style={
+                        'margin-top': '0px',
+                        'margin-bottom': '20px',
+                    },
+                ),
+            ],
         ),
-        html.Div([
-            dcc.Dropdown(id='enquiry-type',
-            options = options,
-            value = options[0]['value'])
-        ], style={'width': '250px',
-                  'display': 'inline-block',
-                  'marginLeft': '20px'}),
 
-        
-        html.Div([
-            dcc.Graph(id='company-total')
-            
-        ]),
-        html.Div([
-            dcc.Graph(id='company-totals_yoy')
-            
-        ])
+        # * Grid Container
+        html.Div(
+            [
+                # * YoY Control Panel
+                html.Div(
+                    [
+                        html.P(
+                            'Filter by type of Enquiry/Reservation:',
+                            className='label',
+                        ),
+                        dcc.Dropdown(
+                            id='enquiry-type',
+                            options = options,
+                            value = options[0]['value'],
+                            clearable=False,
+                        ),
+                        html.P(
+                            'Slide to add/remove years:',
+                            className='label',
+                        ),
+                        dcc.RangeSlider(
+                            id='slider-years',
+                            min=min_year,
+                            max=max_year,
+                            step=1,
+                            value=[max_year -2, max_year],
+                            className='yoy-slider',
+                        ),
+                    ],
+                    id='yoy-panel',
+                    className='styled-panel control-panel',
+                ),
 
-])
+                # * YoY Chart
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                dcc.Graph(
+                                    id='totals-yoy',
+                                    config=config_charts,
+                                    style=dict(
+                                        height='350px',
+                                    )
+                                ),
+                            ],
+                            className='styled-panel',
+                        ),
+                    ],
+                    id='yoy-chart',
+                    className='chart-container',
+                ),
+                html.Div(
+                    [
+                        dcc.Graph(
+                            id='metric-trend-chart',
+                            config=config_charts,
+                            style=dict(
+                                height='350px',
+                            )
+                        ),
+                    ],
+                    id='trend-chart',
+                    className='styled-panel',
+                ),
+            ],
+            className='grid-container',
+        ),
+    ],
+    id="main-section",
+)
 
-@app.callback(Output('company-total', 'figure'),
+
+@app.callback(Output('totals-yoy', 'figure'),
+             [Input('enquiry-type', 'value'),
+              Input('slider-years', 'value')])
+def update_totals_yoy(yaxis_value, years_range):
+
+    chart_title = [label for label in options if label['value'] == yaxis_value]
+
+    data = []
+    for year in year_list[::-1]:
+        if year >= years_range[0] and year <= years_range[1]:
+            trace = go.Scatter(
+                        x=df_total['month_name'],
+                        y=df_total[df_total['year']==year][yaxis_value],
+                        mode='lines+markers',
+                        name=year,
+                        line=dict(
+                            shape='spline',
+                            smoothing=0.7,
+                        )
+                    )
+            data.append(trace)
+
+    layout = go.Layout(
+                title={
+                    'text': chart_title[0]['label'],
+                    'y':0.99,
+                    'x':0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top',
+                },
+                xaxis={
+                    # 'title': 'Month',
+                    'gridcolor': '#eeeeee',
+                },
+                yaxis={'title': 'Enquiries'},
+                hovermode='x',
+                plot_bgcolor='#F9F9F9',
+                paper_bgcolor='#F9F9F9',
+                autosize=True,
+                margin=dict(l=60, r=20, b=30, t=30),
+                template=None,
+            )
+
+    figure = go.Figure(data=data, layout=layout)
+    return figure
+
+
+@app.callback(Output('metric-trend-chart', 'figure'),
               [Input('enquiry-type', 'value')])
 def update_graph(yaxis_value):
 
     chart_title = [label for label in options if label['value'] == yaxis_value]
+    
+    # layout_chart = copy.deepcopy(layout)
 
     figure={
         'data': [
@@ -89,45 +234,25 @@ def update_graph(yaxis_value):
                 x=df_total.index,
                 y=df_total[yaxis_value],
                 mode='lines+markers',
+                line=dict(
+                    shape='spline',
+                    smoothing=0.7,
+                )
             )
         ],
         'layout':
             go.Layout(
                 title=chart_title[0]['label'],
-                xaxis={'title': 'Date'},
+                # xaxis={'title': 'Date'},
                 yaxis={'title': 'Enquiries'},
                 xaxis_tickformat='%B %Y',
                 hovermode='closest',
-            )        
+                plot_bgcolor='#F9F9F9',
+                paper_bgcolor='#F9F9F9',
+                autosize=True,
+                margin=dict(l=60, r=20, b=30, t=30),
+            ),
     }
-    return figure
-
-
-@app.callback(Output('company-totals_yoy', 'figure'),
-             [Input('enquiry-type', 'value')])
-def update_chart_yoy(yaxis_value):
-
-    chart_title = [label for label in options if label['value'] == yaxis_value]
-
-    data = []
-    for year in year_list[::-1]:
-        trace = go.Scatter(
-                    x=df_total['month'],
-                    y=df_total[df_total['year']==year][yaxis_value],
-                    mode='lines+markers',
-                    name=year,
-                    
-                )
-        data.append(trace)
-
-    layout = go.Layout(
-                title=chart_title[0]['label'],
-                xaxis={'title': 'Month'},
-                yaxis={'title': 'Enquiries'},
-                hovermode='closest', 
-            )
-
-    figure = go.Figure(data=data, layout=layout)
     return figure
 
 
