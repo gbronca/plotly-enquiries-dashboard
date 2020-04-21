@@ -7,31 +7,13 @@ import pandas as pd
 from datetime import datetime
 import copy
 
-# ! TailwindCSS load
-# external_stylesheets = ['https://unpkg.com/tailwindcss@^1.2/dist/tailwind.min.csss',
-#                 {
-#                     'href':'https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css',
-#                     'rel': 'stylesheet',
-#                     'crossorigin': 'anonymous'
-#                 }
-# ]
-
 # Configures the ModeBar on the charts
 config_charts = dict({
     'displayModeBar': 'hover',
     'displaylogo': False,
 })
 
-# TODO create generic layout for all charts
-# layout = dict(
-#     hovermode='closest',
-#     plot_bgcolor='#F9F9F9',
-#     paper_bgcolor='#F9F9F9',
-#     autosize=True,
-#     margin=dict(l=60, r=30, b=40, t=30),
-# )
-
-df = pd.read_excel('Data/Enquiry Report.xlsm',
+df = pd.read_excel('Data/Enquiry Report.xlsx',
                     sheet_name='Enquiry Report DataSheet',
                     index_col=None, na_values=['NA'])
 
